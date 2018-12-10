@@ -1,0 +1,79 @@
+数据类型：
+
+pthread_t:线程句柄
+
+pthread_attr_t:线程属性
+
+线程操作函数：
+
+pthread_create():创建一个线程
+
+pthread_exit():终止当前线程
+
+pthread_cancel():中断另外一个线程的运行
+
+pthread_join():阻塞当前的线程，直到另外一个线程运行结束
+
+pthread_attr_init():初始化线程的属性
+
+pthread_attr_setdetachstate():设置脱离状态的属性
+
+pthread_attr_getdetachstate():获取脱离状态的属性
+
+pthread_attr_destroy():删除线程的属性
+
+pthread_kill():向线程发送一个信号
+
+
+pthread_detach，这个函数可以改变线程的可接入属性，将其改变成分离模式。当线程处于分离模式，表明我们对于线程的返回值并不关心，工作线程执行完毕后会自行退出，内核会释放该线程占用的资源。
+
+
+线程创建时，系统会分配给线程一些资源，我们可以看到的就是线程描述符，线程堆栈，在系统内部还会有更复杂的系统维护一些信息，在线程创建时，内核总会为其维护一些资源，比较理想的情况是线程运行结束后，释放系统资源和进程资源，包含线程返回值占用的内存，线程堆栈，寄存器状态等等，以备后来者的使用.
+
+    如果您创建一个可接合的线程，但是忘记联接它，其资源或私有内存一直保存在进程空间中，从未进行回收再利用。一定要联接可接 合的线程；否则，可能会引起严重的内存泄漏问题。
+
+
+     linux线程执行和windows不同，pthread有两种状态joinable状态和unjoinable状态
+
+ 一个线程默认的状态是joinable，如果线程是joinable状态，当线程函数自己返回退出时或pthread_exit时都不会释放线程所占用堆栈和线程描述符（总计8K多）。只有当你调用了pthread_join之后这些资源才会被释放。
+若是unjoinable状态的线程，这些资源在线程函数退出时或pthread_exit时自动会被释放。
+
+unjoinable属性可以在pthread_create时指定，或在线程创建后在线程中pthread_detach自己, 如：pthread_detach(pthread_self())，将状态改为unjoinable状态，确保资源的释放。如果线程状态为 joinable,需要在之后适时调用pthread_join.
+
+1.正常退出
+
+在main函数中执行return。
+调用exit函数。
+调用_exit函数。
+2.异常退出
+
+调用abort函数
+进程收到某个信号，该信号使程序终止。
+
+
+在Linux系统中，程序终止了之后，其他程序并不会直接使用这块内存，而是保留着作为缓存，在该程序下次运行时继续使用，所有free统计的内存在减小！这个可以度娘或谷歌free命令，能找到详解。
+
+
+https://www.cnblogs.com/xiaowenhu/p/3542535.html
+
+
+
+信号	描述
+SIGABRT	程序的异常终止，如调用 abort。
+SIGFPE	错误的算术运算，比如除以零或导致溢出的操作。
+SIGILL	检测非法指令。
+SIGINT	接收到交互注意信号。
+SIGSEGV	非法访问内存。
+SIGTERM	发送到程序的终止请求。
+
+ctrl+c 发送SIGINT信号
+ctrl+\ 发送SIGQUIT信号
+
+1，reboot发送kill信号时，按照pid从小到大。
+
+2，如果父进程接收到了SIGTERM信号，子进程就接收不到SIGTERM信号了。
+
+2，inittab启动的进程，接受不到SIGTERM信号。
+SIGKILL是不能屏蔽的，
+
+都知道malloc后需要free才能释放内存，shmat后需要shmdt才能断掉内存区并使用IPC_RMID命令删除共享内存。那么如果是当前进程exit后，这些东西还需要收到清理吗？进程退出会清理除打开的文件描述符外，还做些什么呢？
